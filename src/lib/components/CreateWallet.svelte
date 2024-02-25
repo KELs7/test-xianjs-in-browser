@@ -44,6 +44,8 @@
     </div>
     <div>
         <input placeholder="seed: optional (128 characters in hex)" class="box" bind:value={seed} type="text">
+    </div>
+    <div>
         <input placeholder="derivationIndex: optional (default = 0)" class="box" bind:value={derivationIndex} type="number">
     </div>
     <button class="butt" on:click={createBIP39Wallet}>Create BIP39 Wallet</button>
