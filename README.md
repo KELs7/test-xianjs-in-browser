@@ -1,6 +1,6 @@
 # test-xianjs-in-browser
 
-This is a frontend built with svelte to showcase `xian-js` working in the browser
+This is a frontend built with svelte to showcase [`xian-js`](https://github.com/XianChain/xian-js) working in the browser
 
 ## Getting Started
 
@@ -39,4 +39,4 @@ npm run dev
 The project should be available at `http://localhost:5173` in your browser if that port is not already in use by another process.
 
 ### > [!NOTE]
-> ES module files from the `dist` folder of [`xian-js`](https://github.com/XianChain/xian-js) was used in this project
+> Only ES module files from build was used in this project
