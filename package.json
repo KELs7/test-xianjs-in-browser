@@ -20,7 +20,7 @@
     "bignumber.js": "^9.1.2",
     "bip39": "^3.1.0",
     "buffer": "^6.0.3",
-    "ed25519-keygen": "^0.4.11",
+    "micro-ed25519-hdkey": "^0.1.2",
     "node-cryptojs-aes": "^0.4.0",
     "tweetnacl": "^1.0.3"
   }
