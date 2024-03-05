@@ -1,42 +1,7 @@
 var __defProp = Object.defineProperty;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __async = (__this, __arguments, generator) => {
-  return new Promise((resolve, reject) => {
-    var fulfilled = (value) => {
-      try {
-        step(generator.next(value));
-      } catch (e) {
-        reject(e);
-      }
-    };
-    var rejected = (value) => {
-      try {
-        step(generator.throw(value));
-      } catch (e) {
-        reject(e);
-      }
-    };
-    var step = (x) => x.done ? resolve(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
-    step((generator = generator.apply(__this, __arguments)).next());
-  });
 };
 
 // src/lib/wallet.ts
@@ -200,9 +165,8 @@ function isLamdenKey(string) {
   return false;
 }
 function decodeInt(encodedInt) {
-  let decodedBytes = Buffer.from(encodedInt, "base64");
-  let value = decodedBytes.readInt32BE(0);
-  return value;
+  let decodedInt = parseInt(Buffer.from(encodedInt, "base64").toString());
+  return decodedInt;
 }
 function decodeQuery(response) {
   let value;
@@ -297,7 +261,7 @@ var stringifyTransaction = (tx) => Buffer.from(JSON.stringify(tx)).toString("hex
 // src/lib/wallet.ts
 import nacl from "tweetnacl";
 import * as bip39 from "bip39";
-import { HDKey } from "ed25519-keygen/hdkey";
+import { HDKey } from "micro-ed25519-hdkey";
 var create_wallet = (args = {}) => {
   let { sk, keepPrivate, seed } = args;
   let vk;
@@ -623,81 +587,63 @@ var MasternodeAPI = class {
   get url() {
     return this.host;
   }
-  getContractInfo(contractName) {
-    return __async(this, null, function* () {
-      const { data } = yield axios.post(`${this.host}/abci_query?path="/contract/${contractName}"`);
-      return decodeQuery(data.result.response);
-    });
+  async getContractInfo(contractName) {
+    const { data } = await axios.post(`${this.host}/abci_query?path="/contract/${contractName}"`);
+    return decodeQuery(data.result.response);
   }
-  getVariable(contract, variable) {
-    return __async(this, null, function* () {
-      let path = `/get/${contract}.${variable}/`;
-      const url = `${this.host}/abci_query?path="${path}"`;
-      const { data } = yield axios.post(url);
-      const result = data.result.response;
-      let decoded = decodeQuery(result);
-      return decoded;
-    });
+  async getVariable(contract, variable) {
+    let path = `/get/${contract}.${variable}/`;
+    const url = `${this.host}/abci_query?path="${path}"`;
+    const { data } = await axios.post(url);
+    const result = data.result.response;
+    let decoded = decodeQuery(result);
+    return decoded;
   }
-  getContractMethods(contractName) {
-    return __async(this, null, function* () {
-      const { data } = yield axios.post(`${this.host}/abci_query?path="/contract_methods/${contractName}"`);
-      return JSON.parse(decodeQuery(data.result.response));
-    });
+  async getContractMethods(contractName) {
+    const { data } = await axios.post(`${this.host}/abci_query?path="/contract_methods/${contractName}"`);
+    return JSON.parse(decodeQuery(data.result.response));
   }
-  getContractVariables(contractName) {
-    return __async(this, null, function* () {
-      const { data } = yield axios.post(`${this.host}/abci_query?path="/contract_vars/${contractName}"`);
-      return JSON.parse(decodeQuery(data.result.response));
-    });
+  async getContractVariables(contractName) {
+    const { data } = await axios.post(`${this.host}/abci_query?path="/contract_vars/${contractName}"`);
+    return JSON.parse(decodeQuery(data.result.response));
   }
-  pingServer() {
-    return __async(this, null, function* () {
-      const { data } = yield axios.post(`${this.host}/abci_query?path="/ping/"`);
-      return JSON.parse(decodeQuery(data.result.response));
-    });
+  async pingServer() {
+    const { data } = await axios.post(`${this.host}/abci_query?path="/ping/"`);
+    return JSON.parse(decodeQuery(data.result.response));
   }
-  getCurrencyBalance(vk) {
-    return __async(this, null, function* () {
-      let balanceRes = yield this.getVariable("currency", `balances:${vk}`);
-      if (!balanceRes)
-        return Encoder("bigNumber", 0);
-      if (balanceRes)
-        return Encoder("bigNumber", balanceRes);
-      return Encoder("bigNumber", balanceRes.toString());
-    });
+  async getCurrencyBalance(vk) {
+    let balanceRes = await this.getVariable("currency", `balances:${vk}`);
+    if (!balanceRes)
+      return Encoder("bigNumber", 0);
+    if (balanceRes)
+      return Encoder("bigNumber", balanceRes);
+    return Encoder("bigNumber", balanceRes.toString());
   }
-  contractExists(contractName) {
-    return __async(this, null, function* () {
-      const contract = yield this.getContractInfo(contractName);
-      if (contract)
-        return true;
-      return false;
-    });
+  async contractExists(contractName) {
+    const contract = await this.getContractInfo(contractName);
+    if (contract)
+      return true;
+    return false;
   }
-  broadcastTx(tx) {
-    return __async(this, null, function* () {
-      const txString = stringifyTransaction(tx);
-      const url = `${this.host}/broadcast_tx_commit?tx="${txString}"`;
-      const { data } = yield axios.get(url);
-      const { check_tx, deliver_tx, hash } = data.result;
-      const result_data = deliver_tx.data ? decodeObj(deliver_tx.data) : null;
-      const check = check_tx.code === 0;
-      const deliver = deliver_tx.code === 0;
-      return { success: check && deliver, data: result_data, hash };
-    });
+  async broadcastTx(tx) {
+    const txString = stringifyTransaction(tx);
+    const url = `${this.host}/broadcast_tx_commit?tx="${txString}"`;
+    const { data } = await axios.get(url);
+    const { check_tx, deliver_tx, hash } = data.result;
+    const result_data = deliver_tx.data ? decodeObj(deliver_tx.data) : null;
+    const check = check_tx.code === 0;
+    const deliver = deliver_tx.code === 0;
+    return { success: check && deliver, data: result_data, hash };
   }
-  getNonce(vk) {
-    return __async(this, null, function* () {
-      const path = `/abci_query?path="/get_next_nonce/${vk}"`;
-      const url = `${this.host}${path}`;
-      const { data } = yield axios.post(url);
-      const value = data.result.response.value;
-      if (value === "AA==")
-        return 0;
-      const decoded = decodeInt(value);
-      return decoded;
-    });
+  async getNonce(vk) {
+    const path = `/abci_query?path="/get_next_nonce/${vk}"`;
+    const url = `${this.host}${path}`;
+    const { data } = await axios.post(url);
+    const value = data.result.response.value;
+    if (value === "AA==")
+      return 0;
+    const decoded = decodeInt(value);
+    return decoded;
   }
   getTransaction(hash) {
     return axios.get(`${this.host}/tx?hash="0x${hash}"`);
@@ -705,10 +651,8 @@ var MasternodeAPI = class {
   getNodeInfo() {
     return axios.get(`${this.host}/status`);
   }
-  getLastetBlock() {
-    return __async(this, null, function* () {
-      return axios.get(`${this.host}/block`);
-    });
+  async getLastetBlock() {
+    return axios.get(`${this.host}/block`);
   }
 };
 
@@ -759,24 +703,22 @@ var TransactionBuilder = class {
     const stringArray = new Uint8Array(stringBuffer);
     return sign(sk, stringArray);
   }
-  send(sk) {
-    return __async(this, null, function* () {
-      try {
-        if (!this.payload.nonce) {
-          this.payload.nonce = yield this.masternodeApi.getNonce(this.sender);
-        }
-        this.sortedPayload = makePayload(this.payload);
-        const signature = this.sign(sk, this.sortedPayload);
-        const tx = makeTransaction(signature, this.sortedPayload);
-        let response = yield this.masternodeApi.broadcastTx(tx);
-        return response;
-      } catch (e) {
-        return {
-          success: false,
-          error: e
-        };
+  async send(sk) {
+    try {
+      if (!this.payload.nonce) {
+        this.payload.nonce = await this.masternodeApi.getNonce(this.sender);
       }
-    });
+      this.sortedPayload = makePayload(this.payload);
+      const signature = this.sign(sk, this.sortedPayload);
+      const tx = makeTransaction(signature, this.sortedPayload);
+      let response = await this.masternodeApi.broadcastTx(tx);
+      return response;
+    } catch (e) {
+      return {
+        success: false,
+        error: e
+      };
+    }
   }
 };
 
@@ -818,7 +760,7 @@ var Keystore = class {
         wallets = [];
         keyList.forEach((keyInfo) => {
           let newWallet = create_wallet({ sk: keyInfo.sk, keepPrivate: true });
-          newWallet = __spreadValues(__spreadValues({}, newWallet), keyInfo);
+          newWallet = { ...newWallet, ...keyInfo };
           delete newWallet.sk;
           wallets.push(newWallet);
         });
@@ -1025,12 +967,21 @@ var Keystore = class {
 // src/index.ts
 import { Buffer as Buffer2 } from "buffer";
 globalThis.Buffer = Buffer2;
+var src_default = {
+  TransactionBuilder,
+  MasternodeAPI,
+  Wallet: wallet_exports,
+  Keystore,
+  Encoder,
+  Utils: helpers_exports
+};
 export {
   Encoder,
   Keystore,
   MasternodeAPI,
   TransactionBuilder,
   helpers_exports as Utils,
-  wallet_exports as Wallet
+  wallet_exports as Wallet,
+  src_default as default
 };
 //# sourceMappingURL=index.mjs.map
